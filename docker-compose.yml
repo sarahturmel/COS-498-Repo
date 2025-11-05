@@ -1,0 +1,29 @@
+services:
+  # Node.js Express application
+  backend-nodejs:
+    build: ./backend
+    container_name: backend-nodejs
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    # No ports exposed - only nginx can access this container
+    networks:
+      - app-network
+
+  # nginx reverse proxy
+  nginx:
+    build: ./nginx
+    container_name: my-nginx-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"  # Only nginx exposes ports to the host
+    depends_on:
+      - backend-nodejs
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
