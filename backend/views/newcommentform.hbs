@@ -1,0 +1,26 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>New Comment Form</title>
+</head>
+<body>
+    <h1>New Comment Form</h1>
+	{{#if error}}
+  <script>alert('{{error}}');</script>
+{{/if}}    
+    <h2>Use the form below to create a comment!</h2>
+    <form method="POST" action="/comment">
+        <p>
+            <label for="text">Enter comment:</label><br>
+            <input type="text" id="text" name="text" required>
+        </p>
+        <p>
+            <button type="submit">Post</button>
+            <a href="/comments">Cancel</a>
+        </p>
+    </form>
+    
+</body>
+</html>
+

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Register with Wild West</title>
+</head>
+<body>
+    <h1>Register with Wild West</h1>
+	{{#if error}}
+  <script>alert('{{error}}');</script>
+{{/if}}
+    <form method="POST" action="/register">
+        <p>
+            <label for="username">Make a Username:</label><br>
+            <input type="text" id="username" name="username" required>
+        </p>
+
+        <p>
+            <label for="password">Make a Password:</label><br>
+            <input type="password" id="password" name="password" required>
+        </p>
+
+        <p>
+            <button type="submit">Login</button>
+            <a href="/">Cancel</a>
+        </p>
+    </form>
+
+    {{#if error}}
+    <p style="color: red;">Please enter a unique username and password.</p>
+    {{/if}}
+
+</body>
+</html>

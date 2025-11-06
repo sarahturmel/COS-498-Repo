@@ -1,0 +1,32 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Comments page</title>
+</head>
+<body>
+    <h1>Comments</h1>
+    
+    <h2>List of all comments</h2>
+	<p>
+        {{#if user.loggedIn}}
+		<form method="GET" action="/comment/new" style="display: inline;">
+            <button type="submit">Create New Comment</button>
+        </form>
+        {{/if}}
+    </p>    
+	<p> <a href="/">Home</a></p>
+<ul id="dynamic-list"></ul> <!-- Placeholder for the list -->
+    <script>
+  const comments = {{{ comments }}};
+  const list = document.getElementById("dynamic-list");
+
+  comments.forEach(item => {
+    const listItem = document.createElement("li");
+    listItem.textContent = `${item.text} - ${item.author}`;
+    list.appendChild(listItem);
+  });
+</script>    
+</body>
+</html>
+

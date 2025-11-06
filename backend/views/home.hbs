@@ -1,0 +1,32 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wild West Forum</title>
+</head>
+<body>
+    <h1>Wild West Forum</h1>
+    
+    <h2>Current User Information</h2>    
+<p><strong>Name:</strong> {{user.name}}</p>
+    <p><strong>Status:</strong> {{#if user.isLoggedIn}}Logged In{{else}}Guest{{/if}}</p>
+    {{#if user.isLoggedIn}}
+    <p><strong>Login Time:</strong> {{user.loginTime}}</p>
+    <p><strong>Visit Count:</strong> {{user.visitCount}}</p>
+    {{/if}}
+    
+    <p>
+        {{#if user.isLoggedIn}}
+            <form method="POST" action="/logout" style="display: inline;">
+                <button type="submit">Logout</button>
+            </form>
+        {{else}}
+		<a href="/register">Register</a>
+            <a href="/login">Login</a>
+        {{/if}}
+	<a href="/comments">Comments</a>
+    </p>
+	
+</body>
+</html>
+
