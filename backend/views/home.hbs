@@ -1,12 +1,14 @@
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Wild West Forum</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to the Wild West</title>
+	<link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-    <h1>Wild West Forum</h1>
-    
+	{{> header title="Welcome to the Wild West"}}    
     <h2>Current User Information</h2>    
 <p><strong>Name:</strong> {{user.name}}</p>
     <p><strong>Status:</strong> {{#if user.isLoggedIn}}Logged In{{else}}Guest{{/if}}</p>
@@ -20,13 +22,9 @@
             <form method="POST" action="/logout" style="display: inline;">
                 <button type="submit">Logout</button>
             </form>
-        {{else}}
-		<a href="/register">Register</a>
-            <a href="/login">Login</a>
         {{/if}}
-	<a href="/comments">Comments</a>
-    </p>
-	
+</p>
+{{> footer }}
 </body>
 </html>
 

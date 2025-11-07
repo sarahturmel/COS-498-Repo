@@ -15,8 +15,12 @@ let comments = []
 app.set('view engine', 'hbs');
 app.set('views', path.join(__dirname, 'views'));
 
+// Register partials directory
+hbs.registerPartials(path.join(__dirname, 'views', 'partials'));
+
 // Middleware
 app.use(express.urlencoded({ extended: false }));
+app.use(express.static('public'));
 
 // Session middleware configuration
 app.use(session({

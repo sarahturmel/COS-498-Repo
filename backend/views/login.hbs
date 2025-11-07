@@ -2,10 +2,13 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login to Wild West</title>
+<link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-    <h1>Login to Wild West</h1>
+	{{> header title="Login to Wild West"}}
 	{{#if error}}
   <script>alert('{{error}}');</script>
 {{/if}}
@@ -30,7 +33,7 @@
     {{#if error}}
     <p style="color: red;">Please enter both username and password.</p>
     {{/if}}
-    
+    {{> footer}}
 </body>
 </html>
 

@@ -2,10 +2,13 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>New Comment Form</title>
+<link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-    <h1>New Comment Form</h1>
+    {{> header title="New Comment Form" }}
 	{{#if error}}
   <script>alert('{{error}}');</script>
 {{/if}}    
@@ -20,7 +23,7 @@
             <a href="/comments">Cancel</a>
         </p>
     </form>
-    
+    {{> footer}}
 </body>
 </html>
 

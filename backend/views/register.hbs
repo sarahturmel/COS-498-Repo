@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register with Wild West</title>
+	<link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-    <h1>Register with Wild West</h1>
+    {{> header title="Register with Wild West"}}
 	{{#if error}}
   <script>alert('{{error}}');</script>
 {{/if}}
@@ -28,6 +31,6 @@
     {{#if error}}
     <p style="color: red;">Please enter a unique username and password.</p>
     {{/if}}
-
+{{> footer }}
 </body>
 </html>
