@@ -9,6 +9,8 @@
 </head>
 <body>
     {{> header title="New Comment Form" }}
+
+	{{!-- If there is an error alert the user, and display the new comment box for the user to fill in --}}
 	{{#if error}}
   <script>alert('{{error}}');</script>
 {{/if}}    
@@ -20,7 +22,7 @@
         </p>
         <p>
             <button type="submit">Post</button>
-            <a href="/comments">Cancel</a>
+            <a href="/comments"><button>Cancel</button></a>
         </p>
     </form>
     {{> footer}}

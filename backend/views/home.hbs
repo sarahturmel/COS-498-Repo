@@ -9,6 +9,8 @@
 </head>
 <body>
 	{{> header title="Welcome to the Wild West"}}    
+
+	{{!-- Display the current user information, modified to reflect the logged in status --}}
     <h2>Current User Information</h2>    
 <p><strong>Name:</strong> {{user.name}}</p>
     <p><strong>Status:</strong> {{#if user.isLoggedIn}}Logged In{{else}}Guest{{/if}}</p>

@@ -9,6 +9,8 @@
 </head>
 <body>
 	{{> header title="Login to Wild West"}}
+
+	{{!-- If there is an error, display it, and display the login form for the user --}}
 	{{#if error}}
   <script>alert('{{error}}');</script>
 {{/if}}
@@ -26,12 +28,12 @@
         
         <p>
             <button type="submit">Login</button>
-            <a href="/">Cancel</a>
+            <a href="/"><button>Cancel</button></a>
         </p>
     </form>
     
     {{#if error}}
-    <p style="color: red;">Please enter both username and password.</p>
+    <p style="color: red;">Please enter a registered username and password.</p>
     {{/if}}
     {{> footer}}
 </body>

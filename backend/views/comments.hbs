@@ -9,7 +9,8 @@
 </head>
 <body>
     {{> header title="Comments" }}
-    
+
+	{{!-- Display the comments, as well as the new comment button if the user is logged in --}}    
     <h2>List of all comments</h2>
 	<p>
         {{#if user.loggedIn}}
