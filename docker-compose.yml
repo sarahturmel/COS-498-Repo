@@ -1,3 +1,4 @@
+# New docker compose file that uses nginx proxy manager
 services:
   # Node.js Express application
   backend-nodejs:
@@ -7,19 +8,21 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
-    # No ports exposed - only nginx can access this container
     networks:
       - app-network
 
-  # nginx reverse proxy
-  nginx:
-    build: ./nginx
-    container_name: my-nginx-proxy
+  # Nginx Proxy Manager
+  nginx-proxy-manager:
+    image: 'jc21/nginx-proxy-manager:latest'
+    container_name: nginx-proxy-manager
     restart: unless-stopped
     ports:
-      - "80:80"  # Only nginx exposes ports to the host
-    depends_on:
-      - backend-nodejs
+      - '80:80'      # HTTP traffic
+      - '443:443'    # HTTPS traffic
+      - '5001:81'    # Admin web interface, pick an unusual port for security
+    volumes: # place to store all the data that we need persistant and external
+      - ./nginx/data:/data
+      - ./nginx/letsencrypt:/etc/letsencrypt
     networks:
       - app-network
 

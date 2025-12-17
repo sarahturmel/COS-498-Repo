@@ -27,7 +27,7 @@
 
   comments.forEach(item => {
     const listItem = document.createElement("li");
-    listItem.textContent = `${item.text} - ${item.author}`;
+    listItem.textContent = `${item.body} - ${item.author}, ${item.timeposted}`;
     list.appendChild(listItem);
   });
 </script>    
