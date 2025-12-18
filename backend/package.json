@@ -13,9 +13,10 @@
   "dependencies": {
     "argon2": "^0.44.0",
     "better-sqlite3": "^12.5.0",
-    "express": "^5.1.0",
+    "express": "^5.2.1",
     "express-session": "^1.18.2",
     "express-sessions": "^1.0.6",
-    "hbs": "^4.2.0"
+    "hbs": "^4.2.0",
+    "socket.io": "^4.8.1"
   }
 }

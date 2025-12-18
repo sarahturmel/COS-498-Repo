@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wild West Chat with Socket.io</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    {{> header title="Chatroom"}}
+    <div>
+        <button id="connectBtn">Connect to Socket.IO</button>
+        <button id="getUserInfoBtn">Request Data</button>
+        <button id="sendMessageBtn">Send Message</button>
+    </div>
+    
+    <div id="status">Not connected</div>
+    <div id="messages"></div>
+
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+    <script>
+        let socket = null;
+        // Connect to Socket.IO with credentials
+        document.getElementById('connectBtn').addEventListener('click', () => {
+            // Important: Set withCredentials to true so cookies are sent
+            socket = io('http://keengreenmachine.org', {
+                withCredentials: true
+            });
+            
+            socket.on('connect', () => {
+                document.getElementById('status').textContent = data.message;
+            });
+            
+            socket.on('error', (error) => {
+                document.getElementById('status').textContent = 'Error: ' + error.message;
+            });
+            
+            socket.on('userInfo', (data) => {
+                document.getElementById('messages').innerHTML = 
+                    '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            });
+            
+            socket.on('message', (data) => {
+                const msgDiv = document.createElement('div');
+                msgDiv.textContent = `${user.displayname}: ${data.message}`;
+                msgDiv.style.color = user.namecolor;
+                document.getElementById('messages').appendChild(msgDiv);
+            });
+        });
+        
+        // Get user info
+        document.getElementById('getUserInfoBtn').addEventListener('click', () => {
+            if (socket) {
+                socket.emit('getUserInfo');
+            }
+        });
+        
+        // Send message
+        document.getElementById('sendMessageBtn').addEventListener('click', () => {
+            if (socket) {
+                socket.emit('sendMessage', {
+                    message: 'Hello from client!'
+                });
+            }
+        });
+    </script>
+    {{> footer }}
+</body>
+</html>

@@ -4,7 +4,7 @@ const Database = require('better-sqlite3');
 const path = require('path');
 
 // Connect to database file
-const dbPath = path.join(__dirname, 'myapp.db');
+const dbPath = path.join(__dirname, 'data/myapp.db');
 const db = new Database(dbPath);
 
 // Enable foreign keys
@@ -18,9 +18,7 @@ db.exec(`
     email TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
     displayname TEXT NOT NULL,
-    namecolor BLOB NULL,
-    icon BLOB NULL,
-    theme TEXT NULL,
+    namecolor BLOB DEFAULT #000000,
     bio TEXT NULL,
     last_login DATETIME DEFAULT CURRENT_TIMESTAMP
   )
@@ -37,7 +35,8 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS comments (
     author TEXT NOT NULL,
     body TEXT NOT NULL,
-    timeposted DATETIME DEFAULT CURRENT_TIMESTAMP
+    timeposted DATETIME DEFAULT CURRENT_TIMESTAMP,
+    color BLOB DEFAULT #000000
   )
 `);
 // Create login_attempts table for tracking failed login attempts by IP and username

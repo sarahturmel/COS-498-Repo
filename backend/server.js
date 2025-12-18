@@ -6,10 +6,12 @@ const app = express();
 const path = require('path');
 const hbs = require('hbs');
 const PORT = process.env.PORT || 3000;
-const db = require('./database');
-const pw = require('./password-utils');
-const loginTracker = require('./login-tracker');
-const { checkLoginLockout, getClientIP } = require('./auth-middleware');
+const db = require('./modules/database');
+const pw = require('./modules/password-utils');
+const loginTracker = require('./modules/login-tracker');
+const { checkLoginLockout, getClientIP } = require('./modules/auth-middleware');
+const { Server } = require('socket.io');
+const server = http.createServer(app);
 
 
 // Set view engine and views directory
@@ -35,6 +37,7 @@ app.use(session({
 }));
 
 // API Routes
+
 // Home page - reads session data
 app.get('/', (req, res) => {
     let user = {  // Guest object to act as a default if there is no session
@@ -137,7 +140,7 @@ app.post('/login', checkLoginLockout, async (req, res) => {
     			res.redirect('/');
 		}
 	} else {
-      		res.status(404).json({ error: 'User not found' });
+      	res.status(404).json({ error: 'User not found' });
     	}
     } catch (error) {
     	res.status(500).json({ error: error.message });
@@ -158,19 +161,19 @@ app.post('/logout', (req, res) => {
 app.get('/comments', (req, res) => {
 	try {
 		let user = {  // Guest object to act as a default if there is no session
-        		name: "Guest",
-        		isLoggedIn: false
-	        };
-    		// Check if user is logged in via session
-    		if (req.session.isLoggedIn) {
-			const matchingUser = db.prepare('SELECT * from users WHERE username = ?').get(req.session.username);
-        		user = {
-            			name: matchingUser.displayname,
-            			isLoggedIn: true,
-        		};
+			name: "Guest",
+			isLoggedIn: false
+		};
+		// Check if user is logged in via session
+		if (req.session.isLoggedIn) {
+		const matchingUser = db.prepare('SELECT * from users WHERE username = ?').get(req.session.username);
+			user = {
+				name: matchingUser.displayname,
+				isLoggedIn: true,
+			};
 		}
-    		const comments = db.prepare('SELECT * FROM comments').all();
-    		res.render('comments', { comments: JSON.stringify(comments), user: user });
+    	const comments = db.prepare('SELECT * FROM comments').all();
+    	res.render('comments', { comments: JSON.stringify(comments), user: user });
   	} catch (error) {
     		res.status(500).json({ error: error.message });
   	}
@@ -180,17 +183,17 @@ app.get('/comments', (req, res) => {
 app.get('/comment/new', (req, res) => {
 	if (!req.session.isLoggedIn) {
 		res.render('login', { error: "Must be logged in to make a comment" });
-        	return res.redirect('/login');
-    	}
+        return res.redirect('/login');
+    }
 	let user = {  // Guest object to act as a default if there is no session
                 name: "Guest", isLoggedIn: false };
-        // Check if user is logged in via session
-        if (req.session.isLoggedIn) {
+	// Check if user is logged in via session
+	if (req.session.isLoggedIn) {
 		const matchingUser = db.prepare('SELECT * from users WHERE username = ?').get(req.session.username);
-                user = {
-                        name: matchingUser.displayname,
-                        isLoggedIn: true,
-                };
+		user = {
+			name: matchingUser.displayname,
+			isLoggedIn: true,
+		};
 	}
     	res.render('newcommentform', { user: user });
 });
@@ -200,10 +203,11 @@ app.post('/comment', (req, res) => {
 	const text = req.body.text;
 	if (!text) {
 		res.render('newcommentform', { error: "Please enter a valid comment" });
-		return res.redirect('/comment/new'); }
+		return res.redirect('/comment/new');
+	}
 	const matchingUser = db.prepare('SELECT * from users WHERE username = ?').get(req.session.username);
-	const stmt = db.prepare('INSERT INTO comments (author, body, timeposted) VALUES (?, ?, ?)');
-    	const result = stmt.run(matchingUser.displayname, text, new Date().toISOString());
+	const stmt = db.prepare('INSERT INTO comments (author, body, timeposted, color) VALUES (?, ?, ?, ?)');
+    const result = stmt.run(matchingUser.displayname, text, new Date().toISOString(), matchingUser.namecolor);
 	res.redirect('/comments');
 });
 
@@ -214,7 +218,7 @@ app.get('/profile', (req, res) => {
 		res.render('profile', { user: matchingUser });
 	} else {
 		res.render('login', { error: "Must be logged in to view profile." });
-                return res.redirect('/login');
+        return res.redirect('/login');
 	}
 });
 
@@ -223,6 +227,97 @@ app.post('/profile', (req, res) => {
 	const { displayname, bio, namecolor } = req.body;
 	db.prepare('UPDATE users SET displayname = ?, bio = ?, namecolor = ? WHERE username = ?').run(displayname, bio, namecolor, req.session.username);
 	res.redirect('/profile');
+});
+
+// Visit chat
+app.get('/chat', (req, res) => {
+	if (req.session.isLoggedIn) {
+		const matchingUser = db.prepare('SELECT * from users WHERE username = ?').get(req.session.username);
+		res.render('chat', { user: matchingUser });
+	} else {
+		res.render('login', { error: "Must be logged in to view chat." });
+        return res.redirect('/login');
+	}
+});
+
+// Create Socket.IO server
+const io = new Server(server, {
+    cors: { origin: "*", methods: ["GET", "POST"] }
+});
+
+// Share session with Socket.IO (official method)
+io.engine.use(sessionMiddleware);
+
+// Now session is available in socket.request.session
+io.on('connection', (socket) => {
+	const req = socket.request;
+    const session = socket.request.session;
+    const username = session.username;
+    const isLoggedIn = session.isLoggedIn;
+
+	// Periodically reload session to check expiration
+    const timer = setInterval(() => {
+        req.session.reload((err) => {
+            if (err) {
+                // Session expired or error - force reconnect
+                socket.conn.close();
+                clearInterval(timer);
+            }
+        });
+    }, SESSION_RELOAD_INTERVAL);
+    
+    // Authentication check
+    if (!isLoggedIn) {
+        socket.emit('error', { message: 'Authentication required' });
+        socket.disconnect();
+        return;
+    }
+	console.log('Client connected:', socket.id);
+    console.log('User:', username);
+	const matchingUser = db.prepare('SELECT * from users WHERE username = ?').get(username);
+    
+    // Send welcome message
+    socket.emit('connected', {
+        message: `Welcome ${username}!`,
+        loginTime: session.loginTime
+    });
+    
+    // Listen for authenticated requests
+    socket.on('getUserInfo', () => {
+        socket.emit('userInfo', { matchingUser });
+    });
+    
+    socket.on('sendMessage', (data) => {
+        // Broadcast message with user info
+        io.emit('message', {
+            displayname: matchingUser.displayname,
+            namecolor: matchingUser.namecolor,
+            message: data.message,
+            timestamp: new Date().toISOString()
+        });
+    });
+    
+    socket.on('disconnect', () => {
+        clearInterval(timer);
+    });
+
+	socket.on('updateCount', () => {
+        // Reload session to get latest data
+        req.session.reload((err) => {
+            if (err) {
+                return socket.disconnect();
+            }
+            
+            // Modify session
+            req.session.count = (req.session.count || 0) + 1;
+            
+            // Save session
+            req.session.save();
+            
+            // Emit updated count
+            socket.emit('countUpdated', { count: req.session.count });
+        });
+    });
 });
 
 app.listen(PORT, () => {

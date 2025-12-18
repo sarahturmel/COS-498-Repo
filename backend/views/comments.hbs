@@ -19,18 +19,19 @@
         </form>
         {{/if}}
     </p>    
-	<p> <a href="/">Home</a></p>
-<ul id="dynamic-list"></ul> <!-- Placeholder for the list -->
+	<p><a href="/">Home</a></p>
+    <ul id="dynamic-list"></ul> <!-- Placeholder for the list -->
     <script>
-  const comments = {{{ comments }}};
-  const list = document.getElementById("dynamic-list");
+        const comments = {{{ comments }}};
+        const list = document.getElementById("dynamic-list");
 
-  comments.forEach(item => {
-    const listItem = document.createElement("li");
-    listItem.textContent = `${item.body} - ${item.author}, ${item.timeposted}`;
-    list.appendChild(listItem);
-  });
-</script>    
+        comments.forEach(item => {
+            const listItem = document.createElement("li");
+            listItem.textContent = `${item.body} - ${item.author}, ${item.timeposted}`;
+            listItem.style.color = item.color;
+            list.appendChild(listItem);
+        });
+    </script>
 {{> footer}}
 </body>
 </html>

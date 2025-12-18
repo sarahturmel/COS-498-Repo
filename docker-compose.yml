@@ -3,6 +3,8 @@ services:
   # Node.js Express application
   backend-nodejs:
     build: ./backend
+    volumes:
+      - ./backend/data:/app/data
     container_name: backend-nodejs
     restart: unless-stopped
     environment:
