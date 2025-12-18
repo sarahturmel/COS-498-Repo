@@ -10,7 +10,7 @@
         #chatContainer {
             display: flex;
             flex-direction: column;
-            height: 80vh;
+            height: 50vh;
             max-width: 600px;
             margin: 0 auto;
             border: 1px solid #ccc;
@@ -71,7 +71,7 @@
 </head>
 <body>
     {{> header title="Chatroom"}}
-    <div>
+    <div style="padding: 10px">
         <button id="connectBtn">Connect to Socket.IO</button>
         <button id="getUserInfoBtn">Request Data</button>
     </div>
