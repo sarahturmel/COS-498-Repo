@@ -11,6 +11,7 @@ const pw = require('./modules/password-utils');
 const loginTracker = require('./modules/login-tracker');
 const { checkLoginLockout, getClientIP } = require('./modules/auth-middleware');
 const { Server } = require('socket.io');
+const http = require('http');
 const server = http.createServer(app);
 
 
@@ -26,15 +27,17 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.static('public'));
 
 // Session middleware configuration
-app.use(session({
+const sessionMiddleware = session({
     secret: 'my-secret-key',
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: false, // Set to true if using HTTPS
+        secure: false,
         maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
-}));
+});
+
+app.use(sessionMiddleware);
 
 // API Routes
 
@@ -231,12 +234,11 @@ app.post('/profile', (req, res) => {
 
 // Visit chat
 app.get('/chat', (req, res) => {
-	if (req.session.isLoggedIn) {
-		const matchingUser = db.prepare('SELECT * from users WHERE username = ?').get(req.session.username);
-		res.render('chat', { user: matchingUser });
-	} else {
-		res.render('login', { error: "Must be logged in to view chat." });
-        return res.redirect('/login');
+	if (!req.session.isLoggedIn) {
+        return res.render('login', { error: "Must be logged in to view chat." });
+    }
+    const matchingUser = db.prepare('SELECT * from users WHERE username = ?').get(req.session.username);
+    res.render('chat', { user: matchingUser });
 	}
 });
 
@@ -264,7 +266,7 @@ io.on('connection', (socket) => {
                 clearInterval(timer);
             }
         });
-    }, SESSION_RELOAD_INTERVAL);
+    }, 30 * 1000);
     
     // Authentication check
     if (!isLoggedIn) {
@@ -278,7 +280,7 @@ io.on('connection', (socket) => {
     
     // Send welcome message
     socket.emit('connected', {
-        message: `Welcome ${username}!`,
+        message: `Welcome ${matchingUser.displayname}!`,
         loginTime: session.loginTime
     });
     
@@ -320,6 +322,6 @@ io.on('connection', (socket) => {
     });
 });
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });

@@ -23,13 +23,15 @@
         // Connect to Socket.IO with credentials
         document.getElementById('connectBtn').addEventListener('click', () => {
             // Important: Set withCredentials to true so cookies are sent
-            socket = io('http://keengreenmachine.org', {
+            socket = io('https://keengreenmachine.org', {
                 withCredentials: true
             });
-            
-            socket.on('connect', () => {
-                document.getElementById('status').textContent = data.message;
-            });
+            console.log('Connect button clicked');
+	    console.log('Socket:', socket);
+            socket.on('connected', (data) => {
+		const status = document.getElementById('status');
+		status.textContent = data.message;
+	    });
             
             socket.on('error', (error) => {
                 document.getElementById('status').textContent = 'Error: ' + error.message;
@@ -42,8 +44,8 @@
             
             socket.on('message', (data) => {
                 const msgDiv = document.createElement('div');
-                msgDiv.textContent = `${user.displayname}: ${data.message}`;
-                msgDiv.style.color = user.namecolor;
+                msgDiv.textContent = `${data.displayname}: ${data.message}`;
+                msgDiv.style.color = data.namecolor;
                 document.getElementById('messages').appendChild(msgDiv);
             });
         });

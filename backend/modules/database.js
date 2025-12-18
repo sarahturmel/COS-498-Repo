@@ -18,7 +18,7 @@ db.exec(`
     email TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
     displayname TEXT NOT NULL,
-    namecolor BLOB DEFAULT #000000,
+    namecolor BLOB DEFAULT '#000000',
     bio TEXT NULL,
     last_login DATETIME DEFAULT CURRENT_TIMESTAMP
   )
@@ -36,7 +36,7 @@ db.exec(`
     author TEXT NOT NULL,
     body TEXT NOT NULL,
     timeposted DATETIME DEFAULT CURRENT_TIMESTAMP,
-    color BLOB DEFAULT #000000
+    color BLOB DEFAULT '#000000'
   )
 `);
 // Create login_attempts table for tracking failed login attempts by IP and username
