@@ -37,7 +37,6 @@
 
         .message .meta {
             font-size: 0.8em;
-            color: #555;
         }
 
         /* Input area */
@@ -71,14 +70,10 @@
 </head>
 <body>
     {{> header title="Chatroom"}}
-    <div style="padding: 10px">
-        <button id="connectBtn">Connect to Socket.IO</button>
-        <button id="getUserInfoBtn">Request Data</button>
-    </div>
     <div id="chatContainer">
         <div id="messages"></div>
-        <div id="inputContainer">
-            <input type="text" id="messageInput" placeholder="Type your message..." />
+        <div id="inputContainer" method="POST" action="/chat">
+            <input type="text" id="messageInput" name="message" placeholder="Type your message..." />
             <button id="sendMessageBtn">Send</button>
         </div>
     </div>
@@ -87,60 +82,68 @@
 
     <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
     <script>
-        let socket = null;
+        // First populate the past chats
+        const chats = {{{ chats }}};
+        const list = document.getElementById("dynamic-list");
+
+        chats.forEach(item => {
+            const messagesContainer = document.getElementById('messages');
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('message');
+            msgDiv.style.border = `1px solid ${item.color}`;
+            msgDiv.style.color = item.color;
+
+            const metaDiv = document.createElement('div');
+            metaDiv.classList.add('meta');
+            metaDiv.textContent = `${item.author} • ${item.timeposted}`;
+            metaDiv.style.color = item.color;
+
+            const textDiv = document.createElement('div');
+            textDiv.textContent = data.message;
+
+            msgDiv.appendChild(metaDiv);
+            msgDiv.appendChild(textDiv);
+            messagesContainer.appendChild(msgDiv);
+        });
+
         // Connect to Socket.IO with credentials
-        document.getElementById('connectBtn').addEventListener('click', () => {
-            // Important: Set withCredentials to true so cookies are sent
-            socket = io('https://keengreenmachine.org', {
-                withCredentials: true
-            });
-            console.log('Connect button clicked');
-	    console.log('Socket:', socket);
-            socket.on('connected', (data) => {
-		const status = document.getElementById('status');
-		status.textContent = data.message;
-	    });
-            
-            socket.on('error', (error) => {
-                document.getElementById('status').textContent = 'Error: ' + error.message;
-            });
-            
-            socket.on('userInfo', (data) => {
-                document.getElementById('messages').innerHTML = 
-                    '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
-            });
-            
-            socket.on('message', (data) => {
-                // const msgDiv = document.createElement('div');
-                // msgDiv.textContent = `${data.displayname}: ${data.message}`;
-                // msgDiv.style.color = data.namecolor;
-                // document.getElementById('messages').appendChild(msgDiv);
-
-                const messagesContainer = document.getElementById('messages');
-                const msgDiv = document.createElement('div');
-                msgDiv.classList.add('message');
-                msgDiv.style.border = `1px solid ${data.namecolor}`;
-                msgDiv.style.color = data.namecolor;
-
-                const metaDiv = document.createElement('div');
-                metaDiv.classList.add('meta');
-                const time = new Date().toISOString();
-                metaDiv.textContent = `${data.displayname} • ${time}`;
-
-                const textDiv = document.createElement('div');
-                textDiv.textContent = data.message;
-
-                msgDiv.appendChild(metaDiv);
-                msgDiv.appendChild(textDiv);
-                messagesContainer.appendChild(msgDiv);
-            });
+        // Important: Set withCredentials to true so cookies are sent
+        let socket = null;
+        socket = io('https://keengreenmachine.org', { withCredentials: true });
+        console.log('Connect button clicked');
+        console.log('Socket:', socket);
+        socket.on('connected', (data) => {
+            const status = document.getElementById('status');
+            status.textContent = data.message;
         });
         
-        // Get user info
-        document.getElementById('getUserInfoBtn').addEventListener('click', () => {
-            if (socket) {
-                socket.emit('getUserInfo');
-            }
+        socket.on('error', (error) => {
+            document.getElementById('status').textContent = 'Error: ' + error.message;
+        });
+        
+        socket.on('userInfo', (data) => {
+            document.getElementById('messages').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+        });
+        
+        socket.on('message', (data) => {
+            const messagesContainer = document.getElementById('messages');
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('message');
+            msgDiv.style.border = `1px solid ${data.namecolor}`;
+            msgDiv.style.color = data.namecolor;
+
+            const metaDiv = document.createElement('div');
+            metaDiv.classList.add('meta');
+            const time = new Date().toISOString();
+            metaDiv.textContent = `${data.displayname} • ${time}`;
+            metaDiv.style.color = data.namecolor;
+
+            const textDiv = document.createElement('div');
+            textDiv.textContent = data.message;
+
+            msgDiv.appendChild(metaDiv);
+            msgDiv.appendChild(textDiv);
+            messagesContainer.appendChild(msgDiv);
         });
         
         // Send message

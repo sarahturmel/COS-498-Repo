@@ -130,17 +130,17 @@ app.post('/login', checkLoginLockout, async (req, res) => {
 			// Successful login
 			loginTracker.recordAttempt(ipAddress, username, true);
 
-    			// Update last login time
-    			db.prepare('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE username = ?').run(user.username);
+    		// Update last login time
+    		db.prepare('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE username = ?').run(user.username);
 
 			// Set session data
-        		req.session.isLoggedIn = true;
-        		req.session.username = username;
-        		req.session.loginTime = new Date().toISOString();
-        		req.session.visitCount = 0;
+			req.session.isLoggedIn = true;
+			req.session.username = username;
+			req.session.loginTime = new Date().toISOString();
+			req.session.visitCount = 0;
 			const stmt = db.prepare('INSERT INTO sessions (username, starttime) VALUES (?, ?)');
-    			const result = stmt.run(username, req.session.loginTime);
-    			res.redirect('/');
+			const result = stmt.run(username, req.session.loginTime);
+			res.redirect('/');
 		}
 	} else {
       	res.status(404).json({ error: 'User not found' });
@@ -238,7 +238,20 @@ app.get('/chat', (req, res) => {
         return res.render('login', { error: "Must be logged in to view chat." });
     }
     const matchingUser = db.prepare('SELECT * from users WHERE username = ?').get(req.session.username);
-    res.render('chat', { user: matchingUser });
+	const chats = db.prepare('SELECT * FROM chats').all();
+    res.render('chat', { user: matchingUser, chats: chats });
+});
+
+// Get and store the new chats
+app.post('/chat', (req, res) => {
+	const message = req.body.message;
+	if (!text) {
+		return res.render('chat', { error: "Please enter a valid message" });
+	}
+	const matchingUser = db.prepare('SELECT * from users WHERE username = ?').get(req.session.username);
+	const stmt = db.prepare('INSERT INTO comments (author, message, timeposted, color) VALUES (?, ?, ?, ?)');
+	const result = stmt.run(matchingUser.displayname, message, new Date().toISOString(), matchingUser.namecolor);
+	res.redirect('/chat');
 });
 
 // Create Socket.IO server

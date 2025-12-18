@@ -54,5 +54,15 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_login_attempts_ip_username
   ON login_attempts(ip_address, username, attempt_time)
 `);
+// Create chat history table
+db.exec(`
+  CREATE TABLE IF NOT EXISTS chats (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    author TEXT NOT NULL,
+    color BLOB DEFAULT '#000000',
+    timeposted DATETIME DEFAULT CURRENT_TIMESTAMP,
+    message TEXT NOT NULL
+  )
+`)
 
 module.exports = db;
