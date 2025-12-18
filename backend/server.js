@@ -239,7 +239,6 @@ app.get('/chat', (req, res) => {
     }
     const matchingUser = db.prepare('SELECT * from users WHERE username = ?').get(req.session.username);
     res.render('chat', { user: matchingUser });
-	}
 });
 
 // Create Socket.IO server
