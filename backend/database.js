@@ -7,6 +7,9 @@ const path = require('path');
 const dbPath = path.join(__dirname, 'myapp.db');
 const db = new Database(dbPath);
 
+// Enable foreign keys
+db.pragma('foreign_keys = ON');
+
 // Create tables if they don't exist
 // Create users table
 db.exec(`
@@ -19,8 +22,7 @@ db.exec(`
     icon BLOB NULL,
     theme TEXT NULL,
     bio TEXT NULL,
-    failedattempts INTEGER NOT NULL,
-    lockoutstatus INTEGER NOT NULL DEFAULT 1
+    last_login DATETIME DEFAULT CURRENT_TIMESTAMP
   )
 `);
 // Create sessions table to store session data
@@ -38,14 +40,20 @@ db.exec(`
     timeposted DATETIME DEFAULT CURRENT_TIMESTAMP
   )
 `);
-// Create login attempts table
+// Create login_attempts table for tracking failed login attempts by IP and username
 db.exec(`
-  CREATE TABLE IF NOT EXISTS loginattempts (
+  CREATE TABLE IF NOT EXISTS login_attempts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ip_address TEXT NOT NULL,
     username TEXT NOT NULL,
-    ip VARBINARY(16) NOT NULL,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-    status BIT NOT NULL
+    attempt_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    success INTEGER DEFAULT 0
   )
+`);
+// Create index for faster lookups on IP address and username combination
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_login_attempts_ip_username
+  ON login_attempts(ip_address, username, attempt_time)
 `);
 
 module.exports = db;

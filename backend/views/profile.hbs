@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register with Wild West</title>
+        <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    {{> header title="My Profile"}}
+
+        {{!-- If there is an error, alert the user, and display the profile form --}}
+        {{#if error}}
+  <script>alert('{{error}}');</script>
+{{/if}}
+    <form id="profileForm" method="POST" action="/profile">
+         <p>
+            <label for="displayname">Display Name:</label><br>
+            <input type="text" id="displayname" name="displayname" value="{{user.displayname}}" disabled>
+        </p>
+        <p>
+            <label for="bio">Bio:</label><br>
+            <input type="text" id="bio" name="bio" value="{{user.bio}}" disabled>
+        </p>
+	<p>
+	    <label for="namecolor">Name Color:</label><br>
+	    <input type="color" id="namecolor" name="namecolor" value="{{ user.namecolor }}" disabled>
+	</p>
+        <p>
+            <button type="submit" id="saveBtn" disabled>Save Changes</button>
+        </p>
+    </form>
+    <button id="editBtn">Edit</button>
+    <script>
+	const editBtn = document.getElementById("editBtn");
+	const form = document.getElementById("profileForm");
+	const inputs = form.querySelectorAll("input");
+	const saveBtn = document.getElementById("saveBtn");
+	let editing = false;
+	editBtn.addEventListener("click", () => {
+		editing = !editing;
+		inputs.forEach(input => input.disabled = !editing);
+		saveBtn.disabled = !editing;
+		editBtn.textContent = editing ? "Cancel" : "Edit";
+	});
+    </script>
+    {{#if error}}
+    <p style="color: red;">An error has occurred while editing profile.</p>
+    {{/if}}
+{{> footer }}
+</body>
+</html>

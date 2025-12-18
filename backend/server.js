@@ -1,3 +1,5 @@
+// This file is the main controller of all the routes
+
 const express = require('express');
 const session = require('express-session');
 const app = express();
@@ -6,6 +8,9 @@ const hbs = require('hbs');
 const PORT = process.env.PORT || 3000;
 const db = require('./database');
 const pw = require('./password-utils');
+const loginTracker = require('./login-tracker');
+const { checkLoginLockout, getClientIP } = require('./auth-middleware');
+
 
 // Set view engine and views directory
 app.set('view engine', 'hbs');
@@ -62,13 +67,18 @@ app.get('/register', (req, res) => {
 app.post('/register', async (req, res) => {
     try {
     	const { username, email, password, displayname } = req.body;
-	const hash = await pw.hashPassword(req.body.password);
-	const stmt = db.prepare('INSERT INTO users (username, email, password, displayname, failedattempts) VALUES (?, ?, ?, ?, ?)');
-    	const result = stmt.run(username, email, hash, displayname, 0);
+	const validation = await pw.validatePassword(password);
+	if (!validation.valid) {
+		res.status(401).json({ error: `Errors: ${validation.errors}`});
+	} else {
+	const hash = await pw.hashPassword(password);
+	const stmt = db.prepare('INSERT INTO users (username, email, password, displayname, namecolor, bio) VALUES (?, ?, ?, ?, ?, ?)');
+    	const result = stmt.run(username, email, hash, displayname, '#000000', 'No bio');
    	res.redirect('./login');
+	}
     } catch (error) {
       	if (error.message.includes('UNIQUE constraint')) {
-      		res.status(400).json({ error: 'Email already exists' });
+      		res.status(400).json({ error: 'Email or username already in use' });
     	} else {
       		res.status(500).json({ error: error.message });
     	}
@@ -81,20 +91,42 @@ app.get('/login', (req, res) => {
 });
 
 // Handle login form submission - sets session data
-app.post('/login', async (req, res) => {
+app.post('/login', checkLoginLockout, async (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
+    const ipAddress = getClientIP(req);
 
+    // Validate input
+    if (!username || !password) {
+      // Record failed attempt if username is provided
+      if (username) {
+        loginTracker.recordAttempt(ipAddress, username, false);
+      }
+      return res.status(400).json({error: 'Username and password are required'});
+    }
     // Simple authentication with hashed password
     try {
 	// Find the user
     	const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
+	if (!user) {
+      		// Record failed attempt (user doesn't exist)
+      		loginTracker.recordAttempt(ipAddress, username, false);
+      		return res.status(401).json({ error: 'Invalid username or password'});
+        }
     	if (user) {
       		 // Compare entered password with stored hash
 	        const passwordMatch = await pw.comparePassword(password, user.password);
 		if (!passwordMatch) {
-			res.status(401).json({ error: 'Password does not match' });
+			// Record failed attempt (wrong password)
+      			loginTracker.recordAttempt(ipAddress, username, false);
+      			return res.status(401).json({ error: 'Invalid username or password' });
 		} else {
+			// Successful login
+			loginTracker.recordAttempt(ipAddress, username, true);
+
+    			// Update last login time
+    			db.prepare('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE username = ?').run(user.username);
+
 			// Set session data
         		req.session.isLoggedIn = true;
         		req.session.username = username;
@@ -175,7 +207,24 @@ app.post('/comment', (req, res) => {
 	res.redirect('/comments');
 });
 
+// Visit your profile page
+app.get('/profile', (req, res) => {
+	if (req.session.isLoggedIn) {
+		const matchingUser = db.prepare('SELECT * from users WHERE username = ?').get(req.session.username);
+		res.render('profile', { user: matchingUser });
+	} else {
+		res.render('login', { error: "Must be logged in to view profile." });
+                return res.redirect('/login');
+	}
+});
+
+// Save changes to profile
+app.post('/profile', (req, res) => {
+	const { displayname, bio, namecolor } = req.body;
+	db.prepare('UPDATE users SET displayname = ?, bio = ?, namecolor = ? WHERE username = ?').run(displayname, bio, namecolor, req.session.username);
+	res.redirect('/profile');
+});
+
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
-
