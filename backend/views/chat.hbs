@@ -84,8 +84,7 @@
     <script>
         // First populate the past chats
         const chats = {{{ chats }}};
-        const list = document.getElementById("dynamic-list");
-
+	console.log(chats);
         chats.forEach(item => {
             const messagesContainer = document.getElementById('messages');
             const msgDiv = document.createElement('div');
@@ -99,7 +98,7 @@
             metaDiv.style.color = item.color;
 
             const textDiv = document.createElement('div');
-            textDiv.textContent = data.message;
+            textDiv.textContent = item.message;
 
             msgDiv.appendChild(metaDiv);
             msgDiv.appendChild(textDiv);
@@ -112,6 +111,7 @@
         socket = io('https://keengreenmachine.org', { withCredentials: true });
         console.log('Connect button clicked');
         console.log('Socket:', socket);
+
         socket.on('connected', (data) => {
             const status = document.getElementById('status');
             status.textContent = data.message;

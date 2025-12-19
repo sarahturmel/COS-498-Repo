@@ -13,24 +13,94 @@
 	{{!-- Display the comments, as well as the new comment button if the user is logged in --}}    
     <h2>List of all comments</h2>
 	<p>
-        {{#if user.loggedIn}}
+        {{#if user.isLoggedIn}}
 		<form method="GET" action="/comment/new" style="display: inline;">
             <button type="submit">Create New Comment</button>
         </form>
         {{/if}}
-    </p>    
-	<p><a href="/">Home</a></p>
+    </p>
     <ul id="dynamic-list"></ul> <!-- Placeholder for the list -->
+    <div class="pagination" id="pagination"></div>
     <script>
         const comments = {{{ comments }}};
+	const COMMENTS_PER_PAGE = 20;
+	let currentPage = 1;
         const list = document.getElementById("dynamic-list");
+	const pagination = document.getElementById("pagination");
 
-        comments.forEach(item => {
+        function renderComments(page) {
+        list.innerHTML = "";
+
+        const start = (page - 1) * COMMENTS_PER_PAGE;
+        const end = start + COMMENTS_PER_PAGE;
+        const pageComments = comments.slice(start, end);
+
+        pageComments.forEach(item => {
             const listItem = document.createElement("li");
             listItem.textContent = `${item.body} - ${item.author}, ${item.timeposted}`;
             listItem.style.color = item.color;
             list.appendChild(listItem);
         });
+    }
+
+    function renderPagination() {
+        pagination.innerHTML = "";
+
+        const totalPages = Math.ceil(comments.length / COMMENTS_PER_PAGE);
+
+        // « Prev
+        const prev = document.createElement("a");
+        prev.href = "#";
+        prev.innerHTML = "&laquo;";
+        prev.onclick = (e) => {
+            e.preventDefault();
+            if (currentPage > 1) {
+                currentPage--;
+                update();
+            }
+        };
+        pagination.appendChild(prev);
+
+        // Page numbers
+        for (let i = 1; i <= totalPages; i++) {
+            const pageLink = document.createElement("a");
+            pageLink.href = "#";
+            pageLink.textContent = i;
+
+            if (i === currentPage) {
+                pageLink.classList.add("active");
+            }
+
+            pageLink.onclick = (e) => {
+                e.preventDefault();
+                currentPage = i;
+                update();
+            };
+
+            pagination.appendChild(pageLink);
+        }
+
+        // Go to next page
+        const next = document.createElement("a");
+        next.href = "#";
+        next.innerHTML = "&raquo;";
+        next.onclick = (e) => {
+            e.preventDefault();
+            if (currentPage < totalPages) {
+                currentPage++;
+                update();
+            }
+        };
+        pagination.appendChild(next);
+    }
+
+    function update() {
+        renderComments(currentPage);
+        renderPagination();
+    }
+
+    // Initial render
+    update();
     </script>
 {{> footer}}
 </body>

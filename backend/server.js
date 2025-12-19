@@ -239,19 +239,7 @@ app.get('/chat', (req, res) => {
     }
     const matchingUser = db.prepare('SELECT * from users WHERE username = ?').get(req.session.username);
 	const chats = db.prepare('SELECT * FROM chats').all();
-    res.render('chat', { user: matchingUser, chats: chats });
-});
-
-// Get and store the new chats
-app.post('/chat', (req, res) => {
-	const message = req.body.message;
-	if (!text) {
-		return res.render('chat', { error: "Please enter a valid message" });
-	}
-	const matchingUser = db.prepare('SELECT * from users WHERE username = ?').get(req.session.username);
-	const stmt = db.prepare('INSERT INTO comments (author, message, timeposted, color) VALUES (?, ?, ?, ?)');
-	const result = stmt.run(matchingUser.displayname, message, new Date().toISOString(), matchingUser.namecolor);
-	res.redirect('/chat');
+    res.render('chat', { user: matchingUser, chats: JSON.stringify(chats) });
 });
 
 // Create Socket.IO server
@@ -279,7 +267,7 @@ io.on('connection', (socket) => {
             }
         });
     }, 30 * 1000);
-    
+
     // Authentication check
     if (!isLoggedIn) {
         socket.emit('error', { message: 'Authentication required' });
@@ -289,28 +277,32 @@ io.on('connection', (socket) => {
 	console.log('Client connected:', socket.id);
     console.log('User:', username);
 	const matchingUser = db.prepare('SELECT * from users WHERE username = ?').get(username);
-    
+
     // Send welcome message
     socket.emit('connected', {
         message: `Welcome ${matchingUser.displayname}!`,
         loginTime: session.loginTime
     });
-    
-    // Listen for authenticated requests
-    socket.on('getUserInfo', () => {
-        socket.emit('userInfo', { matchingUser });
-    });
-    
+
     socket.on('sendMessage', (data) => {
-        // Broadcast message with user info
-        io.emit('message', {
-            displayname: matchingUser.displayname,
-            namecolor: matchingUser.namecolor,
-            message: data.message,
-            timestamp: new Date().toISOString()
-        });
+        const message = data.message?.trim();
+    if (!message) return;
+
+    const timestamp = new Date().toISOString();
+
+    // Save to database
+    const stmt = db.prepare('INSERT INTO chats (author, message, timeposted, color) VALUES (?, ?, ?, ?)');
+    stmt.run(matchingUser.displayname, message, timestamp, matchingUser.namecolor);
+
+    // Broadcast
+    io.emit('message', {
+        displayname: matchingUser.displayname,
+        namecolor: matchingUser.namecolor,
+        message,
+        timestamp
     });
-    
+    });
+
     socket.on('disconnect', () => {
         clearInterval(timer);
     });
