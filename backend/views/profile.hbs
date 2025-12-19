@@ -13,9 +13,19 @@
     {{#if error}}
     <script>alert('{{error}}');</script>
     {{/if}}
-    <p>Username: {{user.username}}</p>
-    <p>Email: {{user.email}}</p>
     <form id="profileForm" method="POST" action="/profile">
+        <p>
+            <label for="username">Username:</label><br>
+            <input type="text" id="username" name="username" value="{{user.username}}" disabled>
+        </p>
+        <p>
+            <label for="email">Email:</label><br>
+            <input type="text" id="email" name="email" value="{{user.email}}" disabled>
+        </p>
+        <p>
+            <label for="password">Password:</label><br>
+            <input type="text" id="password" name="password" value="{{user.password}}" disabled>
+        </p>
          <p>
             <label for="displayname">Display Name:</label><br>
             <input type="text" id="displayname" name="displayname" value="{{user.displayname}}" disabled>
@@ -31,6 +41,7 @@
         <p>
             <button type="submit" id="saveBtn" disabled>Save Changes</button>
         </p>
+        <div style="display: none;" name="current_data" value="{{ user }}"></div>
     </form>
     <button id="editBtn">Edit</button>
     <script>

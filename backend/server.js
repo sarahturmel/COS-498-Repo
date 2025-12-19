@@ -12,6 +12,7 @@ const loginTracker = require('./modules/login-tracker');
 const { checkLoginLockout, getClientIP } = require('./modules/auth-middleware');
 const { Server } = require('socket.io');
 const http = require('http');
+const { error } = require('console');
 const server = http.createServer(app);
 
 
@@ -248,9 +249,19 @@ app.get('/profile', (req, res) => {
 });
 
 // Save changes to profile
-app.post('/profile', (req, res) => {
-	const { displayname, bio, namecolor } = req.body;
-	db.prepare('UPDATE users SET displayname = ?, bio = ?, namecolor = ? WHERE username = ?').run(displayname, bio, namecolor, req.session.username);
+app.post('/profile', async (req, res) => {
+	const { username, email, password, displayname, bio, namecolor } = req.body;
+	const current_data = db.prepare('SELECT * from users WHERE username = ?').get(req.session.username);
+	const existing_user = db.prepare('SELECT * from users WHERE username = ? OR email = ?').get(username, email);
+	if (existing_user) {
+		return res.render('profile', {user: current_data, error: "Please enter a unique username and password."});
+	}
+	const validation = await pw.validatePassword(password);
+	if (!validation.valid) {
+		return res.render('profile', {user: current_data, error: "Please enter a valid password."})
+	}
+	db.prepare('UPDATE users SET username = ?, email = ?, password = ?, displayname = ?, bio = ?, namecolor = ? WHERE username = ?').run(username, email, password, displayname, bio, namecolor, req.session.username);
+	req.session.username = username;
 	res.redirect('/profile');
 });
 
