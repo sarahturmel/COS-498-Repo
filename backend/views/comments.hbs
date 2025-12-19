@@ -10,7 +10,7 @@
 <body>
     {{> header title="Comments" }}
 
-	{{!-- Display the comments, as well as the new comment button if the user is logged in --}}    
+	{{!-- Display the comments and pagination, as well as the new comment button if the user is logged in --}}    
     <h2>List of all comments</h2>
 	<p>
         {{#if user.isLoggedIn}}
@@ -19,88 +19,67 @@
         </form>
         {{/if}}
     </p>
-    <ul id="dynamic-list"></ul> <!-- Placeholder for the list -->
-    <div class="pagination" id="pagination"></div>
+    <ul id="dynamic-list"></ul> <!-- Placeholder for the list, populated in the script -->
+    <div class="pagination" id="pagination">
+        {{#if data.current_page > 1}}
+            <a href="/comments?page={{data.current_page - 1}}">&laquo;</a>
+        {{/if}}
+        <div id="numbers"></div> <!-- Placeholder for the numbers, populated in the script -->
+        {{#if data.current_page < data.total_pages}}
+            <a href="/comments?page={{data.current_page + 1}}">&raquo;</a>
+        {{/if}}
+    </div>
     <script>
         const comments = {{{ comments }}};
-	const COMMENTS_PER_PAGE = 20;
-	let currentPage = 1;
+
+        // Render the pagination links
+        const numbersDiv = document.getElementById("numbers");
+        for (let i = 1; i <= data.total_pages; i++) {
+            const item = document.createElement("a");
+            item.textContent = `${i}`;
+            item.href = `/comments?page=${i}`;
+            if (i === data.current_page){ item.focus(); }
+            numbersDiv.appendChild(item);
+        }
+        // Render the comments
+        const MAX_LENGTH = 150;
         const list = document.getElementById("dynamic-list");
-	const pagination = document.getElementById("pagination");
-
-        function renderComments(page) {
-        list.innerHTML = "";
-
-        const start = (page - 1) * COMMENTS_PER_PAGE;
-        const end = start + COMMENTS_PER_PAGE;
-        const pageComments = comments.slice(start, end);
-
-        pageComments.forEach(item => {
+        comments.forEach(item => {
             const listItem = document.createElement("li");
-            listItem.textContent = `${item.body} - ${item.author}, ${item.timeposted}`;
+            const fullText = `${item.body} - ${item.author}, ${item.timeposted}`;
             listItem.style.color = item.color;
+
+            // Check how long the comment is
+            const isLong = fullText.length > MAX_LENGTH;
+            const textSpan = document.createElement("span");
+            const button = document.createElement("button");
+
+            textSpan.textContent = isLong
+                ? fullText.slice(0, MAX_LENGTH) + "..."
+                : fullText;
+            // If the comment is longer than 150 characters, create the truncatable version
+            if (isLong) {
+                button.textContent = "Read more";
+                button.style.marginLeft = "6px";
+                button.style.cursor = "pointer";
+
+                let expanded = false;
+
+                button.addEventListener("click", () => {
+                    expanded = !expanded;
+                    textSpan.textContent = expanded
+                        ? fullText
+                        : fullText.slice(0, MAX_LENGTH) + "...";
+                    button.textContent = expanded ? "Read less" : "Read more";
+                });
+
+                listItem.appendChild(textSpan);
+                listItem.appendChild(button);
+            } else {
+                listItem.appendChild(textSpan);
+            }
             list.appendChild(listItem);
         });
-    }
-
-    function renderPagination() {
-        pagination.innerHTML = "";
-
-        const totalPages = Math.ceil(comments.length / COMMENTS_PER_PAGE);
-
-        // « Prev
-        const prev = document.createElement("a");
-        prev.href = "#";
-        prev.innerHTML = "&laquo;";
-        prev.onclick = (e) => {
-            e.preventDefault();
-            if (currentPage > 1) {
-                currentPage--;
-                update();
-            }
-        };
-        pagination.appendChild(prev);
-
-        // Page numbers
-        for (let i = 1; i <= totalPages; i++) {
-            const pageLink = document.createElement("a");
-            pageLink.href = "#";
-            pageLink.textContent = i;
-
-            if (i === currentPage) {
-                pageLink.classList.add("active");
-            }
-
-            pageLink.onclick = (e) => {
-                e.preventDefault();
-                currentPage = i;
-                update();
-            };
-
-            pagination.appendChild(pageLink);
-        }
-
-        // Go to next page
-        const next = document.createElement("a");
-        next.href = "#";
-        next.innerHTML = "&raquo;";
-        next.onclick = (e) => {
-            e.preventDefault();
-            if (currentPage < totalPages) {
-                currentPage++;
-                update();
-            }
-        };
-        pagination.appendChild(next);
-    }
-
-    function update() {
-        renderComments(currentPage);
-        renderPagination();
-    }
-
-    // Initial render
-    update();
     </script>
 {{> footer}}
 </body>

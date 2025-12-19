@@ -34,7 +34,7 @@ db.exec(`
 db.exec(`
   CREATE TABLE IF NOT EXISTS comments (
     author TEXT NOT NULL,
-    body TEXT NOT NULL,
+    body TEXT NOT NULL CHECK(length(body) <= 800),
     timeposted DATETIME DEFAULT CURRENT_TIMESTAMP,
     color BLOB DEFAULT '#000000'
   )

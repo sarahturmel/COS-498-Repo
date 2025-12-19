@@ -72,17 +72,21 @@ app.get('/register', (req, res) => {
 // Create account
 app.post('/register', async (req, res) => {
     try {
+		// Get the data from the form and check if the password passes the requirements
     	const { username, email, password, displayname } = req.body;
-	const validation = await pw.validatePassword(password);
-	if (!validation.valid) {
-		res.status(401).json({ error: `Errors: ${validation.errors}`});
-	} else {
-	const hash = await pw.hashPassword(password);
-	const stmt = db.prepare('INSERT INTO users (username, email, password, displayname, namecolor, bio) VALUES (?, ?, ?, ?, ?, ?)');
-    	const result = stmt.run(username, email, hash, displayname, '#000000', 'No bio');
-   	res.redirect('./login');
+		const validation = await pw.validatePassword(password);
+		if (!validation.valid) {
+			res.status(401).json({ error: `Errors: ${validation.errors}`});
+		} else {
+
+		// Hash the password and store everything into the users table
+		const hash = await pw.hashPassword(password);
+		const stmt = db.prepare('INSERT INTO users (username, email, password, displayname, namecolor, bio) VALUES (?, ?, ?, ?, ?, ?)');
+		const result = stmt.run(username, email, hash, displayname, '#000000', 'No bio');
+		res.redirect('./login');
 	}
     } catch (error) {
+		// Throw an error if any of the unique traits (username, email) have been reused
       	if (error.message.includes('UNIQUE constraint')) {
       		res.status(400).json({ error: 'Email or username already in use' });
     	} else {
@@ -120,7 +124,7 @@ app.post('/login', checkLoginLockout, async (req, res) => {
       		return res.status(401).json({ error: 'Invalid username or password'});
         }
     	if (user) {
-      		 // Compare entered password with stored hash
+      		// Compare entered password with stored hash
 	        const passwordMatch = await pw.comparePassword(password, user.password);
 		if (!passwordMatch) {
 			// Record failed attempt (wrong password)
@@ -163,20 +167,32 @@ app.post('/logout', (req, res) => {
 // Show all comments and authors
 app.get('/comments', (req, res) => {
 	try {
-		let user = {  // Guest object to act as a default if there is no session
-			name: "Guest",
-			isLoggedIn: false
-		};
+		const COM_CAP = 20;
+		let page_num = req.query.page || 1;
+
+		// Guest object to act as a default if there is no session
+		let user = { name: "Guest", isLoggedIn: false };
+
 		// Check if user is logged in via session
 		if (req.session.isLoggedIn) {
-		const matchingUser = db.prepare('SELECT * from users WHERE username = ?').get(req.session.username);
+			const matchingUser = db.prepare('SELECT * from users WHERE username = ?').get(req.session.username);
 			user = {
 				name: matchingUser.displayname,
 				isLoggedIn: true,
 			};
 		}
-    	const comments = db.prepare('SELECT * FROM comments').all();
-    	res.render('comments', { comments: JSON.stringify(comments), user: user });
+		// Get the total number of comments and thus the number of pages we'll need
+    	const comments_num = db.prepare('SELECT * AS count FROM comments').get().count;
+		const totalPages = Math.ceil(comments_num / COM_CAP);
+
+		// Catch if we've gone to far
+		if (page_num > totalPages) { page_num = totalPages; }
+		
+		// Find the correct 20 comments, sorted by most recent first
+		const comments_20 = db.prepare('SELECT * FROM comments ORDER BY comments.timeposted DESC LIMIT ? OFFSET ?').all(COM_CAP, page_num * COM_CAP - COM_CAP);
+		
+		const render_data = {total_pages: totalPages, total_coms: comments_num, current_page: page_num};
+    	res.render('comments', { comments: JSON.stringify(comments_20), user: user, data: render_data });
   	} catch (error) {
     		res.status(500).json({ error: error.message });
   	}
@@ -184,12 +200,14 @@ app.get('/comments', (req, res) => {
 
 // New comment form
 app.get('/comment/new', (req, res) => {
+	// Only show new comment form if the user is logged in
 	if (!req.session.isLoggedIn) {
 		res.render('login', { error: "Must be logged in to make a comment" });
         return res.redirect('/login');
     }
-	let user = {  // Guest object to act as a default if there is no session
-                name: "Guest", isLoggedIn: false };
+	// Guest object to act as a default if there is no session
+	let user = { name: "Guest", isLoggedIn: false };
+
 	// Check if user is logged in via session
 	if (req.session.isLoggedIn) {
 		const matchingUser = db.prepare('SELECT * from users WHERE username = ?').get(req.session.username);
@@ -198,16 +216,20 @@ app.get('/comment/new', (req, res) => {
 			isLoggedIn: true,
 		};
 	}
-    	res.render('newcommentform', { user: user });
+    res.render('newcommentform', { user: user });
 });
 
 // Store new comment
 app.post('/comment', (req, res) => {
+	// Get the entered text; if empty or too long, throw an error
 	const text = req.body.text;
 	if (!text) {
-		res.render('newcommentform', { error: "Please enter a valid comment" });
-		return res.redirect('/comment/new');
+		return res.render('newcommentform', { error: "Please enter a comment" });
 	}
+	if (text.length > 800) {
+		return res.render('newcommentform', { error: "Please remain at or below 800 characters" });
+	}
+	// Save the new comment into the comments table
 	const matchingUser = db.prepare('SELECT * from users WHERE username = ?').get(req.session.username);
 	const stmt = db.prepare('INSERT INTO comments (author, body, timeposted, color) VALUES (?, ?, ?, ?)');
     const result = stmt.run(matchingUser.displayname, text, new Date().toISOString(), matchingUser.namecolor);
@@ -216,12 +238,12 @@ app.post('/comment', (req, res) => {
 
 // Visit your profile page
 app.get('/profile', (req, res) => {
+	// If logged in, let the user see their profile, else redirect to login
 	if (req.session.isLoggedIn) {
 		const matchingUser = db.prepare('SELECT * from users WHERE username = ?').get(req.session.username);
 		res.render('profile', { user: matchingUser });
 	} else {
-		res.render('login', { error: "Must be logged in to view profile." });
-        return res.redirect('/login');
+		return res.render('login', { error: "Must be logged in to view profile." });
 	}
 });
 
@@ -232,7 +254,7 @@ app.post('/profile', (req, res) => {
 	res.redirect('/profile');
 });
 
-// Visit chat
+// Visit chat - only allow if user is logged in
 app.get('/chat', (req, res) => {
 	if (!req.session.isLoggedIn) {
         return res.render('login', { error: "Must be logged in to view chat." });
@@ -286,21 +308,16 @@ io.on('connection', (socket) => {
 
     socket.on('sendMessage', (data) => {
         const message = data.message?.trim();
-    if (!message) return;
+		if (!message) return;
 
-    const timestamp = new Date().toISOString();
+		const timestamp = new Date().toISOString();
 
-    // Save to database
-    const stmt = db.prepare('INSERT INTO chats (author, message, timeposted, color) VALUES (?, ?, ?, ?)');
-    stmt.run(matchingUser.displayname, message, timestamp, matchingUser.namecolor);
+		// Save new chat to database
+		const stmt = db.prepare('INSERT INTO chats (author, message, timeposted, color) VALUES (?, ?, ?, ?)');
+		stmt.run(matchingUser.displayname, message, timestamp, matchingUser.namecolor);
 
-    // Broadcast
-    io.emit('message', {
-        displayname: matchingUser.displayname,
-        namecolor: matchingUser.namecolor,
-        message,
-        timestamp
-    });
+		// Broadcast the new chat
+		io.emit('message', { displayname: matchingUser.displayname, namecolor: matchingUser.namecolor, message, timestamp });
     });
 
     socket.on('disconnect', () => {
