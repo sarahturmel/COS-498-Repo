@@ -19,18 +19,21 @@
         </form>
         {{/if}}
     </p>
+    <p id="page-info"></p>
     <ul id="dynamic-list"></ul> <!-- Placeholder for the list, populated in the script -->
     <div class="pagination" id="pagination">
-        {{#if data.current_page > 1}}
-            <a href="/comments?page={{data.current_page - 1}}">&laquo;</a>
+        {{#if data.has_prev}}
+            <a href="/comments?page={{data.prev_page}}">&laquo;</a>
         {{/if}}
         <div id="numbers"></div> <!-- Placeholder for the numbers, populated in the script -->
-        {{#if data.current_page < data.total_pages}}
-            <a href="/comments?page={{data.current_page + 1}}">&raquo;</a>
+        {{#if data.has_next}}
+            <a href="/comments?page={{data.next_page}}">&raquo;</a>
         {{/if}}
     </div>
     <script>
         const comments = {{{ comments }}};
+	const data = {{{ data }}};
+	document.getElementById('page-info').textContent = `Total Comments: ${data.total_comments} ~ Total Pages: ${data.total_pages} ~ Current Page: ${data.current_page}`;
 
         // Render the pagination links
         const numbersDiv = document.getElementById("numbers");
@@ -38,7 +41,7 @@
             const item = document.createElement("a");
             item.textContent = `${i}`;
             item.href = `/comments?page=${i}`;
-            if (i === data.current_page){ item.focus(); }
+            if (i === data.current_page){ item.classList.add("active"); }
             numbersDiv.appendChild(item);
         }
         // Render the comments

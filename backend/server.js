@@ -182,7 +182,7 @@ app.get('/comments', (req, res) => {
 			};
 		}
 		// Get the total number of comments and thus the number of pages we'll need
-    	const comments_num = db.prepare('SELECT * AS count FROM comments').get().count;
+    	const comments_num = db.prepare('SELECT COUNT(*) AS count FROM comments').get().count;
 		const totalPages = Math.ceil(comments_num / COM_CAP);
 
 		// Catch if we've gone to far
@@ -191,8 +191,8 @@ app.get('/comments', (req, res) => {
 		// Find the correct 20 comments, sorted by most recent first
 		const comments_20 = db.prepare('SELECT * FROM comments ORDER BY comments.timeposted DESC LIMIT ? OFFSET ?').all(COM_CAP, page_num * COM_CAP - COM_CAP);
 		
-		const render_data = {total_pages: totalPages, total_coms: comments_num, current_page: page_num};
-    	res.render('comments', { comments: JSON.stringify(comments_20), user: user, data: render_data });
+		const render_data = {total_pages: totalPages, total_comments: comments_num, current_page: page_num, has_prev: page_num > 1, has_next: page_num < totalPages, prev_page: page_num - 1, next_page: page_num + 1 };
+    	res.render('comments', { comments: JSON.stringify(comments_20), user: user, data: JSON.stringify(render_data) });
   	} catch (error) {
     		res.status(500).json({ error: error.message });
   	}

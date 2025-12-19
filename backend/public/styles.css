@@ -47,6 +47,7 @@ ul {
 
 .pagination a.active {
   background-color: #d97706;
+  pointer-events: none;      /* prevent clicking the active page */
   color: white;
 }
 
