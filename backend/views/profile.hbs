@@ -14,34 +14,33 @@
     <script>alert('{{error}}');</script>
     {{/if}}
     <form id="profileForm" method="POST" action="/profile">
-        <p>
+        <p style="margin: 8px">
             <label for="username">Username:</label><br>
             <input type="text" id="username" name="username" value="{{user.username}}" disabled>
         </p>
-        <p>
+        <p style="margin: 8px">
             <label for="email">Email:</label><br>
             <input type="text" id="email" name="email" value="{{user.email}}" disabled>
         </p>
-        <p>
+        <p style="margin: 8px">
             <label for="password">Password:</label><br>
             <input type="text" id="password" name="password" value="{{user.password}}" disabled>
         </p>
-         <p>
+         <p style="margin: 8px">
             <label for="displayname">Display Name:</label><br>
             <input type="text" id="displayname" name="displayname" value="{{user.displayname}}" disabled>
         </p>
-        <p>
+        <p style="margin: 8px">
             <label for="bio">Bio:</label><br>
             <input type="text" id="bio" name="bio" value="{{user.bio}}" disabled>
         </p>
-        <p>
+        <p style="margin: 8px">
             <label for="namecolor">Name Color:</label><br>
             <input type="color" id="namecolor" name="namecolor" value="{{ user.namecolor }}" disabled>
         </p>
-        <p>
+        <p style="margin: 8px">
             <button type="submit" id="saveBtn" disabled>Save Changes</button>
         </p>
-        <div style="display: none;" name="current_data" value="{{ user }}"></div>
     </form>
     <button id="editBtn">Edit</button>
     <script>

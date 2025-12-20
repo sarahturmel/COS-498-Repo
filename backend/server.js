@@ -252,16 +252,26 @@ app.get('/profile', (req, res) => {
 app.post('/profile', async (req, res) => {
 	const { username, email, password, displayname, bio, namecolor } = req.body;
 	const current_data = db.prepare('SELECT * from users WHERE username = ?').get(req.session.username);
-	const existing_user = db.prepare('SELECT * from users WHERE username = ? OR email = ?').get(username, email);
-	if (existing_user) {
-		return res.render('profile', {user: current_data, error: "Please enter a unique username and password."});
+	const existing_username = db.prepare('SELECT * from users WHERE username = ? and username != ?').get(username, req.session.username);
+	const existing_email = db.prepare('SELECT * from users WHERE email = ? and email != ?').get(email, current_data.email);
+
+	// If the unique info already belongs to another user, reject
+	if (existing_username) {
+		return res.render('profile', {user: current_data, error: "Please enter a unique username."});
 	}
+	if (existing_email) {
+		return res.render('profile', {user: current_data, error: "Please enter a unique email."});
+	}
+	// Validate the new password and hash it
+	const hash = await pw.hashPassword(password);
+	if (hash != current_data.password) {
 	const validation = await pw.validatePassword(password);
 	if (!validation.valid) {
 		return res.render('profile', {user: current_data, error: "Please enter a valid password."})
 	}
-	db.prepare('UPDATE users SET username = ?, email = ?, password = ?, displayname = ?, bio = ?, namecolor = ? WHERE username = ?').run(username, email, password, displayname, bio, namecolor, req.session.username);
-	req.session.username = username;
+	db.prepare('UPDATE users SET username = ?, email = ?, password = ?, displayname = ?, bio = ?, namecolor = ? WHERE username = ?').run(username, email, hash, displayname, bio, namecolor, req.session.username);
+	}
+	else { db.prepare('UPDATE users SET username = ?, email = ?, password = ?, displayname = ?, bio = ?, namecolor = ? WHERE username = ?').run(username, email, password, displayname, bio, namecolor, req.session.username);}
 	res.redirect('/profile');
 });
 
